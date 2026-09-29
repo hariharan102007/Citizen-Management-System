@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Citizen Complaint TN</title>
+  
+  <!-- Apple Web App meta tags for iPhone -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Citizen TN">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="./icon-192.png">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#1976D2">
+
+  <!-- Tailwind CSS & Leaflet Map -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    /* iOS Safe area padding */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea, select {
+      user-select: auto;
+    }
+    .safe-bottom {
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- iOS App Header -->
+  <header class="bg-blue-600 text-white sticky top-0 z-30 shadow-md">
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <span class="text-2xl">🏛️</span>
+        <div>
+          <h1 class="font-bold text-base leading-tight">Citizen Complaint TN</h1>
+          <p class="text-xs text-blue-100">Tamil Nadu 38 Districts Civic Portal</p>
+        </div>
+      </div>
+      <button onclick="switchTab('guide')" class="bg-blue-700 hover:bg-blue-800 text-white px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1 border border-blue-400">
+        <span>📲</span>
+        <span>Install App</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Scrollable Content Area -->
+  <main class="flex-1 max-w-md w-full mx-auto pb-24 overflow-y-auto">
+
+    <!-- Tab 1: Community Complaints List -->
+    <section id="tab-complaints" class="p-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-lg text-slate-800">Community Grievances</h2>
+        <span id="complaints-count-badge" class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full">4 Active</span>
+      </div>
+
+      <!-- District Filter Bar -->
+      <div class="overflow-x-auto flex space-x-2 py-1 no-scrollbar">
+        <button onclick="filterByDistrict('All')" class="district-filter-pill active px-3 py-1 text-xs font-semibold rounded-full bg-blue-600 text-white whitespace-nowrap">All TN</button>
+        <button onclick="filterByDistrict('Chennai')" class="district-filter-pill px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700 whitespace-nowrap">Chennai</button>
+        <button onclick="filterByDistrict('Coimbatore')" class="district-filter-pill px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700 whitespace-nowrap">Coimbatore</button>
+        <button onclick="filterByDistrict('Madurai')" class="district-filter-pill px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700 whitespace-nowrap">Madurai</button>
+        <button onclick="filterByDistrict('Salem')" class="district-filter-pill px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700 whitespace-nowrap">Salem</button>
+        <button onclick="filterByDistrict('Tiruchirappalli')" class="district-filter-pill px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700 whitespace-nowrap">Trichy</button>
+      </div>
+
+      <!-- Complaints Container -->
+      <div id="complaints-list" class="space-y-3">
+        <!-- Dynamically rendered by app.js -->
+      </div>
+    </section>
+
+    <!-- Tab 2: Interactive TN Live Civic Map -->
+    <section id="tab-map" class="hidden flex flex-col h-[calc(100vh-140px)]">
+      <div class="bg-white p-2.5 shadow-sm border-b flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="text-red-500 font-bold">📍</span>
+          <span class="text-xs font-bold text-slate-700">Live Civic Grievances Map</span>
+        </div>
+        <button onclick="centerUserGPSOnMainMap()" class="bg-emerald-600 text-white text-xs px-2.5 py-1 rounded-md font-semibold flex items-center space-x-1 shadow-sm">
+          <span>📡</span>
+          <span>My Live GPS</span>
+        </button>
+      </div>
+      <div id="main-map" class="flex-1 w-full z-10"></div>
+    </section>
+
+    <!-- Tab 3: Submit New Grievance -->
+    <section id="tab-report" class="hidden p-4 space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-4">
+        <h2 class="font-bold text-lg text-slate-800 flex items-center space-x-2">
+          <span>📝</span>
+          <span>Report Civic Issue</span>
+        </h2>
+
+        <!-- Issue Title -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Issue Title *</label>
+          <input id="input-title" type="text" placeholder="e.g. Deep pothole on Anna Salai" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" required />
+        </div>
+
+        <!-- Department Category -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Civic Department</label>
+          <select id="input-dept" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option>Roads & Potholes</option>
+            <option>Water Supply & Leakages</option>
+            <option>Electricity & Streetlights</option>
+            <option>Sanitation & Drainage</option>
+            <option>Public Safety & Emergency</option>
+            <option>Town Planning & Encroachment</option>
+            <option>Public Health & Sanitation</option>
+          </select>
+        </div>
+
+        <!-- Priority / Urgency -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Urgency Level</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button type="button" onclick="setPriority('Low')" class="priority-btn px-2 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-slate-100 text-slate-700">Low</button>
+            <button type="button" onclick="setPriority('Medium')" class="priority-btn active px-2 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white">Medium</button>
+            <button type="button" onclick="setPriority('High')" class="priority-btn px-2 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-slate-100 text-slate-700">High</button>
+            <button type="button" onclick="setPriority('Emergency')" class="priority-btn px-2 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-slate-100 text-slate-700">Alert</button>
+          </div>
+        </div>
+
+        <!-- Location Controls -->
+        <div class="pt-2 border-t border-slate-100 space-y-2">
+          <label class="block text-xs font-bold text-slate-700">Location in Tamil Nadu *</label>
+
+          <!-- 3 Location Buttons -->
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="detectLiveGPS()" class="flex items-center justify-center space-x-1 bg-emerald-600 active:bg-emerald-700 text-white py-2 px-1 rounded-xl text-xs font-bold shadow-sm">
+              <span id="gps-spinner" class="hidden animate-spin">⏳</span>
+              <span id="gps-icon">📡</span>
+              <span>Live GPS</span>
+            </button>
+
+            <button type="button" onclick="openMapPickerModal()" class="flex items-center justify-center space-x-1 bg-blue-600 active:bg-blue-700 text-white py-2 px-1 rounded-xl text-xs font-bold shadow-sm">
+              <span>🗺️</span>
+              <span>Pick on Map</span>
+            </button>
+
+            <button type="button" onclick="openDistrictsModal()" class="flex items-center justify-center space-x-1 bg-purple-600 active:bg-purple-700 text-white py-2 px-1 rounded-xl text-xs font-bold shadow-sm">
+              <span>🏛️</span>
+              <span>38 Districts</span>
+            </button>
+          </div>
+
+          <!-- Location text input -->
+          <input id="input-location" type="text" placeholder="Street name, landmark, or ward" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+
+          <!-- GPS Coordinates display banner -->
+          <div id="gps-banner" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-800 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-base">✅</span>
+              <div>
+                <p class="font-bold" id="gps-verified-title">Tamil Nadu Location Verified</p>
+                <p class="text-emerald-700 text-[11px] font-mono" id="gps-coords-text">Lat: 13.0827, Lng: 80.2707</p>
+              </div>
+            </div>
+            <button type="button" onclick="openMapPickerModal()" class="text-blue-600 font-bold text-xs underline">Adjust</button>
+          </div>
+        </div>
+
+        <!-- Issue Description -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Issue Description</label>
+          <textarea id="input-desc" rows="3" placeholder="Describe the severity, duration, or landmarks..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+        </div>
+
+        <!-- Photo & Privacy -->
+        <div class="space-y-2 pt-2 border-t border-slate-100">
+          <label class="block text-xs font-bold text-slate-600">Attach Site Photo (Camera / Gallery)</label>
+          <input id="input-photo" type="file" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+          
+          <div class="flex items-center space-x-2 pt-1">
+            <input id="input-anon" type="checkbox" class="w-4 h-4 text-blue-600 rounded border-slate-300" />
+            <label for="input-anon" class="text-xs text-slate-600">Submit anonymously to civic officers</label>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="button" onclick="submitGrievance()" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md text-sm flex items-center justify-center space-x-2">
+          <span>🚀</span>
+          <span>Submit Grievance to Tamil Nadu Corp</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Tab 4: iPhone Installation & Setup Guide -->
+    <section id="tab-guide" class="hidden p-4 space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+        <div class="flex items-center space-x-3">
+          <span class="text-3xl">📱</span>
+          <div>
+            <h2 class="font-bold text-lg text-slate-800">Install on Your iPhone</h2>
+            <p class="text-xs text-slate-500">Run full-screen with native GPS access</p>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 space-y-2">
+          <p class="font-bold">✨ How to Add to iPhone Home Screen in 10 Seconds:</p>
+          <ol class="list-decimal list-inside space-y-1.5 pl-1">
+            <li>Open this page in <strong>Safari</strong> on your iPhone.</li>
+            <li>Tap the <strong>Share</strong> button at the bottom center of Safari (the square with an arrow pointing up 📤).</li>
+            <li>Scroll down and tap <strong>"Add to Home Screen"</strong> (➕).</li>
+            <li>Tap <strong>"Add"</strong> in the top right corner.</li>
+          </ol>
+          <p class="text-slate-600 text-[11px] pt-1">An app icon labeled <strong>"Citizen TN"</strong> will appear on your iPhone screen and launch full-screen with zero browser address bars!</p>
+        </div>
+
+        <div class="border-t border-slate-100 pt-3 space-y-2">
+          <h3 class="font-bold text-sm text-slate-800">Tamil Nadu Civic Features Ported:</h3>
+          <ul class="text-xs text-slate-600 space-y-1">
+            <li>✅ All 38 administrative districts & wards in Tamil Nadu</li>
+            <li>✅ One-tap live GPS recognition with ward determination</li>
+            <li>✅ Interactive OpenStreetMap pin dropping and adjustments</li>
+            <li>✅ Grievance triage across roads, water, lights, & sanitation</li>
+            <li>✅ Camera evidence capture directly from iPhone</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal 1: Interactive Map Picker -->
+  <div id="modal-map-picker" class="fixed inset-0 z-50 bg-black/60 hidden flex items-end sm:items-center justify-center">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl h-[85vh] flex flex-col overflow-hidden shadow-2xl animate-fade-in">
+      <div class="p-3 bg-slate-100 border-b flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-sm text-slate-800">Pinpoint Location on Map</h3>
+          <p class="text-[11px] text-slate-500">Tap anywhere on Tamil Nadu to drop pin</p>
+        </div>
+        <button onclick="closeMapPickerModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold px-2">✕</button>
+      </div>
+
+      <!-- Quick city selector chips -->
+      <div class="p-2 bg-white border-b flex space-x-2 overflow-x-auto no-scrollbar">
+        <button onclick="jumpMapPicker('Chennai', 13.0827, 80.2707)" class="px-2.5 py-1 text-xs bg-slate-100 font-semibold rounded-full whitespace-nowrap">Chennai</button>
+        <button onclick="jumpMapPicker('Coimbatore', 11.0168, 76.9558)" class="px-2.5 py-1 text-xs bg-slate-100 font-semibold rounded-full whitespace-nowrap">Coimbatore</button>
+        <button onclick="jumpMapPicker('Madurai', 9.9252, 78.1198)" class="px-2.5 py-1 text-xs bg-slate-100 font-semibold rounded-full whitespace-nowrap">Madurai</button>
+        <button onclick="jumpMapPicker('Salem', 11.6643, 78.1460)" class="px-2.5 py-1 text-xs bg-slate-100 font-semibold rounded-full whitespace-nowrap">Salem</button>
+        <button onclick="jumpMapPicker('Trichy', 10.7905, 78.7047)" class="px-2.5 py-1 text-xs bg-slate-100 font-semibold rounded-full whitespace-nowrap">Trichy</button>
+      </div>
+
+      <!-- Picker Map Canvas -->
+      <div id="picker-map" class="flex-1 w-full relative"></div>
+
+      <!-- Bottom Confirmation card -->
+      <div class="p-3 bg-white border-t space-y-2 safe-bottom">
+        <div class="flex items-start justify-between text-xs">
+          <div>
+            <p id="picker-district-text" class="font-bold text-slate-800">Chennai, Tamil Nadu</p>
+            <p id="picker-addr-text" class="text-slate-500 text-[11px] truncate max-w-[280px]">Anna Salai / T. Nagar</p>
+          </div>
+          <span id="picker-coords-text" class="font-mono text-[10px] text-slate-400">13.0827, 80.2707</span>
+        </div>
+        <button onclick="confirmMapLocation()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm shadow-md flex items-center justify-center space-x-1">
+          <span>✅</span>
+          <span>Confirm This Location</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: 38 Districts & Wards Selector -->
+  <div id="modal-districts" class="fixed inset-0 z-50 bg-black/60 hidden flex items-end sm:items-center justify-center">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-3 bg-slate-100 border-b flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-sm text-slate-800">Tamil Nadu 38 Districts & Wards</h3>
+          <p class="text-[11px] text-slate-500">Tap any ward or district center</p>
+        </div>
+        <button onclick="closeDistrictsModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold px-2">✕</button>
+      </div>
+
+      <!-- Search & Zone Filters -->
+      <div class="p-3 bg-white border-b space-y-2">
+        <input id="district-search-input" oninput="renderDistrictsList()" type="text" placeholder="Search district or ward (e.g. Guindy, Gandhipuram)..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        <div class="flex space-x-1.5 overflow-x-auto no-scrollbar text-xs">
+          <button onclick="filterRegion('All')" class="region-pill active px-2.5 py-1 rounded-full bg-blue-600 text-white whitespace-nowrap font-medium text-[11px]">All (38)</button>
+          <button onclick="filterRegion('Northern TN')" class="region-pill px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 whitespace-nowrap font-medium text-[11px]">Northern</button>
+          <button onclick="filterRegion('Western / Kongu')" class="region-pill px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 whitespace-nowrap font-medium text-[11px]">Western</button>
+          <button onclick="filterRegion('Central & Delta')" class="region-pill px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 whitespace-nowrap font-medium text-[11px]">Central</button>
+          <button onclick="filterRegion('Southern TN')" class="region-pill px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 whitespace-nowrap font-medium text-[11px]">Southern</button>
+        </div>
+      </div>
+
+      <!-- Districts List -->
+      <div id="districts-list-container" class="flex-1 overflow-y-auto p-3 space-y-3">
+        <!-- Rendered by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- iOS Bottom Tab Bar -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-30">
+    <div class="max-w-md mx-auto grid grid-cols-4 safe-bottom">
+      <button onclick="switchTab('complaints')" id="tab-btn-complaints" class="flex flex-col items-center py-2 text-blue-600">
+        <span class="text-xl">📋</span>
+        <span class="text-[10px] font-bold mt-0.5">Complaints</span>
+      </button>
+
+      <button onclick="switchTab('map')" id="tab-btn-map" class="flex flex-col items-center py-2 text-slate-400">
+        <span class="text-xl">🗺️</span>
+        <span class="text-[10px] font-bold mt-0.5">Civic Map</span>
+      </button>
+
+      <button onclick="switchTab('report')" id="tab-btn-report" class="flex flex-col items-center py-2 text-slate-400">
+        <span class="text-xl">➕</span>
+        <span class="text-[10px] font-bold mt-0.5">Report</span>
+      </button>
+
+      <button onclick="switchTab('guide')" id="tab-btn-guide" class="flex flex-col items-center py-2 text-slate-400">
+        <span class="text-xl">📱</span>
+        <span class="text-[10px] font-bold mt-0.5">iPhone</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Load App Logic -->
+  <script src="./districts.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

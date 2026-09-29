@@ -48,7 +48,7 @@ class MainViewModel : ViewModel() {
                 description = "There is a large pothole near the City Market causing accidents.",
                 categoryName = "Roads & Potholes",
                 department = "Public Works",
-                location = "MG Road, Near City Market",
+                location = "Anna Salai, Near Mount Road, Chennai",
                 status = ComplaintStatus.WORK_STARTED,
                 priority = Priority.HIGH,
                 createdAt = Date(System.currentTimeMillis() - 86400000 * 5),
@@ -56,8 +56,8 @@ class MainViewModel : ViewModel() {
                 supportCount = 24,
                 isAiClassified = true,
                 officerName = "Priya Singh",
-                latitude = 12.9716,
-                longitude = 77.5946,
+                latitude = 13.0600,
+                longitude = 80.2600,
                 deadline = Date(System.currentTimeMillis() + 86400000 * 2),
                 imageUrl = "https://images.unsplash.com/photo-1594818379496-da1e345b0ded", // Dummy pothole image
                 statusHistory = listOf(
@@ -70,31 +70,63 @@ class MainViewModel : ViewModel() {
             Complaint(
                 complaintId = "CMP2026001237",
                 title = "Gas Leakage Alert",
-                description = "Strong smell of gas near apartment complex.",
+                description = "Strong smell of gas near commercial complex.",
                 categoryName = "Public Safety",
                 department = "Emergency Services",
-                location = "Whitefield, Zone 2",
+                location = "Cross Cut Rd, Gandhipuram, Coimbatore",
                 status = ComplaintStatus.ASSIGNED,
                 priority = Priority.EMERGENCY,
                 createdAt = Date(),
                 userId = 2,
                 isEscalated = true,
                 escalationLevel = "Supervisor",
-                deadline = Date(System.currentTimeMillis() - 3600000) // Overdue
+                deadline = Date(System.currentTimeMillis() - 3600000), // Overdue
+                latitude = 11.0168,
+                longitude = 76.9558
             ),
             Complaint(
                 complaintId = "CMP2026001235",
                 title = "Streetlight not working",
-                description = "Sector 5 park area is dark.",
+                description = "North Chitrai Street area is dark.",
                 categoryName = "Streetlights",
                 department = "Power Department",
-                location = "Sector 5 Park",
+                location = "North Chitrai St, Temple Ward, Madurai",
                 status = ComplaintStatus.RESOLVED,
                 priority = Priority.MEDIUM,
                 createdAt = Date(),
                 userId = 1,
-                latitude = 12.9720,
-                longitude = 77.5950
+                latitude = 9.9252,
+                longitude = 78.1198
+            ),
+            Complaint(
+                complaintId = "CMP2026001240",
+                title = "Water Logging near Anna Salai Flyover",
+                description = "Heavy water stagnation blocking traffic near Gemini Flyover.",
+                categoryName = "Water Supply",
+                department = "Greater Chennai Corporation",
+                location = "Anna Salai, T. Nagar, Chennai",
+                status = ComplaintStatus.SUBMITTED,
+                priority = Priority.CRITICAL,
+                createdAt = Date(System.currentTimeMillis() - 7200000),
+                userId = 1,
+                supportCount = 38,
+                latitude = 13.0450,
+                longitude = 80.2400
+            ),
+            Complaint(
+                complaintId = "CMP2026001241",
+                title = "Broken Streetlight on Marina Beach Promenade",
+                description = "Streetlights not functioning near Gandhi Statue promenade.",
+                categoryName = "Streetlights",
+                department = "Power Department",
+                location = "Kamarajar Salai, Marina Beach, Chennai",
+                status = ComplaintStatus.ASSIGNED,
+                priority = Priority.MEDIUM,
+                createdAt = Date(System.currentTimeMillis() - 14400000),
+                userId = 2,
+                supportCount = 19,
+                latitude = 13.0480,
+                longitude = 80.2800
             )
         )
     }
@@ -148,7 +180,18 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun submitComplaint(title: String, description: String, category: String, department: String, location: String, priority: Priority, isAnonymous: Boolean = false, imageUrl: String? = null) {
+    fun submitComplaint(
+        title: String, 
+        description: String, 
+        category: String, 
+        department: String, 
+        location: String, 
+        priority: Priority, 
+        isAnonymous: Boolean = false, 
+        imageUrl: String? = null,
+        latitude: Double? = 12.9730 + (Math.random() - 0.5) * 0.015,
+        longitude: Double? = 77.5960 + (Math.random() - 0.5) * 0.015
+    ) {
         val newComplaint = Complaint(
             complaintId = "CMP${Date().time / 100000}",
             title = title,
@@ -162,6 +205,8 @@ class MainViewModel : ViewModel() {
             userId = 1,
             isAnonymous = isAnonymous,
             imageUrl = imageUrl,
+            latitude = latitude,
+            longitude = longitude,
             statusHistory = listOf(StatusHistoryItem(ComplaintStatus.SUBMITTED, Date(), "Complaint submitted successfully."))
         )
         _complaints.value = listOf(newComplaint) + _complaints.value

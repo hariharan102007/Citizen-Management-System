@@ -33,7 +33,103 @@ fun ProfileScreen(
     onLogout: () -> Unit
 ) {
     val complaints by viewModel.complaints.collectAsState()
+    val showIosTransferDialog = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val showPwaDialog = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     
+    if (showPwaDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showPwaDialog.value = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("📱 Run on iPhone (Method 1: PWA)", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Surface(
+                        color = Color(0xFFE3F2FD),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF1565C0))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Method 1 Ready: Complete Progressive Web App created in /pwa folder!",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF0D47A1)
+                            )
+                        }
+                    }
+
+                    Text("No Mac, Xcode, or App Store account required!:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("• Optimized specifically for iPhone Safari with full-screen standalone mode\n• Live iPhone GPS detection + Reverse Geocoding for all 38 TN Districts\n• Interactive Leaflet map with complaint pin dropping\n• Photo attachments from iPhone Camera & Photo Library\n• Offline cache using Service Worker & LocalStorage", fontSize = 12.sp, color = Color(0xFF333333))
+
+                    HorizontalDivider()
+
+                    Text("How to Install on iPhone in 30 Seconds:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("Option A (Automated GitHub Pages):\nClick 'Push to GitHub' in AI Studio menu. The automated GitHub Action deploys the PWA immediately.\n\nOption B (Instant Free Drag & Drop):\n1. Click 'Export to ZIP' in AI Studio menu.\n2. Open app.netlify.com/drop in any browser.\n3. Drag the 'pwa' folder into the browser.\n4. Open the generated HTTPS URL on your iPhone in Safari.\n5. Tap Share (📤) > 'Add to Home Screen' (➕)!", fontSize = 12.sp, color = Color(0xFF444444))
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showPwaDialog.value = false }) {
+                    Text("Got it")
+                }
+            }
+        )
+    }
+
+    if (showIosTransferDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showIosTransferDialog.value = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("📱 Native iPhone App (Path B)", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Surface(
+                        color = Color(0xFFE8F5E9),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF2E7D32))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Path B Completed: Full iOS project generated in /iosApp directory!",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF1B5E20)
+                            )
+                        }
+                    }
+
+                    Text("Features Ported to iOS (SwiftUI & MapKit):", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("• All 38 Tamil Nadu districts with administrative zones & civic wards\n• Interactive Apple MapKit pin dropping with live reverse geocoding\n• Apple CoreLocation live GPS detection with Tamil Nadu ward resolution\n• Offline-first civic complaint submission & community upvoting", fontSize = 12.sp, color = Color(0xFF333333))
+
+                    HorizontalDivider()
+
+                    Text("How to Install on your iPhone:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("1. In AI Studio menu (top right), choose 'Export to ZIP' or 'Push to GitHub'.\n2. Open the 'iosApp' folder on any Mac in Xcode (or use GitHub Actions workflow).\n3. Connect your iPhone via USB, select your Apple ID in Signing, and click Run!\n4. The app will install natively onto your iPhone home screen.", fontSize = 12.sp, color = Color(0xFF555555))
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showIosTransferDialog.value = false }) {
+                    Text("Got it")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -111,6 +207,18 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 SectionTitle("SUPPORT & INFO")
+                SettingsItem(
+                    icon = Icons.Default.Phone,
+                    title = "📱 Run on iPhone (Method 1: PWA)",
+                    value = "No Mac Needed",
+                    onClick = { showPwaDialog.value = true }
+                )
+                SettingsItem(
+                    icon = Icons.Default.Share,
+                    title = "💻 Native iOS App (Xcode / Mac)",
+                    value = "Ready in /iosApp",
+                    onClick = { showIosTransferDialog.value = true }
+                )
                 SettingsItem(Icons.Default.Info, "Help Center", "")
                 SettingsItem(Icons.Default.Star, "Rate the App", "")
                 SettingsItem(Icons.Default.ExitToApp, "Log Out", "", isDestructive = true, onClick = onLogout)

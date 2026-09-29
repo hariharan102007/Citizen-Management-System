@@ -57,7 +57,10 @@ fun MainScreen(viewModel: MainViewModel, email: String, onNavigateToDetails: (St
                 ComplaintsScreen(viewModel, role, onNavigateToDetails)
             }
             composable(Screen.Map.route) {
-                MapScreen(viewModel)
+                MapScreen(
+                    viewModel = viewModel,
+                    onNavigateToDetails = onNavigateToDetails
+                )
             }
             composable("chat") {
                 ChatbotScreen()
